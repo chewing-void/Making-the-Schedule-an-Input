@@ -1,0 +1,60 @@
+{
+  "status": "passed",
+  "scope": "Static packaging and syntax only; no imports, runtime, build, benchmark, legal clearance or scientific reproduction validation.",
+  "python_version": "3.13.12",
+  "file_count": 45,
+  "python_files_parsed": 23,
+  "mapped_source_and_patch_files": 25,
+  "exact_license_files_verified": 5,
+  "excluded_files_checked": 6,
+  "local_markdown_links_checked": 28,
+  "secret_scan": "High-confidence heuristic patterns only; absence of findings is not a guarantee.",
+  "errors": [],
+  "prepared_at_utc": "2026-11-08T21:49:30.582482+00:00",
+  "original_directory_integrity": {
+    "files_checked": 37,
+    "status": "all source files unchanged by SHA-256 comparison; no added/deleted original files"
+  },
+  "retained_source_code_integrity": {
+    "python_files": 22,
+    "result": "Executable AST unchanged compared with original; only headers and docstrings edited",
+    "patch_files": 3,
+    "patch_result": "All three original patches retained byte for byte"
+  },
+  "patch_checks": [
+    {
+      "patch": "patches/gsicp-diff-gaussian-rasterization-deterministic-backward.patch",
+      "base_commit": "95dbb69d81449ae56783628803198bea2f42e2c9",
+      "command": "git apply --check -p1",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "patch": "patches/gsicp-fast_gicp-reliable-neighbours.patch",
+      "base_commit": "e2954b1aa06a563d1b2ef2ec5d1fddd1e911d8f4",
+      "command": "git apply --check -p1",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "patch": "patches/monogs-diff-gaussian-rasterization-deterministic-backward.patch",
+      "base_commit": "43e21bff91cd24986ee3dd52fe0bb06952e50ec7",
+      "command": "git apply --check -p2",
+      "status": "passed",
+      "exit_code": 0
+    }
+  ],
+  "patch_check_scope": "Only the exact 16 touched upstream files were downloaded into separate temporary source trees. No patch applied, build or source execution.",
+  "not_performed": [
+    "CUDA/C++ compilation",
+    "Dependency installation/imports",
+    "Process/GPU protocol behavior",
+    "GS-ICP or MonoGS end-to-end reproduction (source is incomplete)",
+    "TorchBeast/Atari execution",
+    "Determinism, accuracy, timing or other paper-result validation",
+    "Formal legal clearance",
+    "Remote publication/upload",
+    "Permission changes"
+  ],
+  "secret_review": "No recognizable credential/private-key/token formats found. Broader text review also performed; heuristic/manual screening cannot guarantee absence of all secrets."
+}

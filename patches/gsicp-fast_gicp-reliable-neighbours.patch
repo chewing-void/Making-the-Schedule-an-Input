@@ -1,0 +1,179 @@
+--- a/include/fast_gicp/gicp/impl/fast_gicp_impl.hpp
++++ b/include/fast_gicp/gicp/impl/fast_gicp_impl.hpp
+@@ -39,7 +39,6 @@
+ void FastGICP<PointSource, PointTarget, SearchMethodSource, SearchMethodTarget>::setNumThreads(int n) {
+   num_threads_ = n;
+ 
+-
+ #ifdef _OPENMP
+   if (n == 0) {
+     num_threads_ = omp_get_max_threads();
+@@ -280,13 +279,19 @@
+     Eigen::Matrix4d RCR = cov_B + trans.matrix() * cov_A * trans.matrix().transpose();
+     RCR(3, 3) = 1.0;
+ 
+-    if (RCR.determinant() == 0){
+-      // std::cout << "mahalanobis value will be NaN" << std::endl;
++    double det = RCR.determinant();
++    if (std::abs(det) < 1e-9 || !std::isfinite(det)){
+       mahalanobis_[i] = RCR.completeOrthogonalDecomposition().pseudoInverse();
+       mahalanobis_[i](3, 3) = 0.0f;
++      if (!mahalanobis_[i].allFinite()) mahalanobis_[i].setZero();
+     }
+     else{
+-      mahalanobis_[i] = RCR.inverse();
++      Eigen::Matrix4d inv = RCR.inverse();
++      if (!inv.allFinite()) {
++        inv = RCR.completeOrthogonalDecomposition().pseudoInverse();
++        if (!inv.allFinite()) inv.setZero();
++      }
++      mahalanobis_[i] = inv;
+       mahalanobis_[i](3, 3) = 0.0f;
+     }
+   }
+@@ -600,6 +605,9 @@
+ 
+   typename pcl::PointCloud<PointT>::Ptr newCloud(new pcl::PointCloud<PointT>);
+   newCloud->points.resize(source_num_trackable_points_);
++  newCloud->width = source_num_trackable_points_;
++  newCloud->height = 1;
++  newCloud->is_dense = true;
+   // pcl::copyPointCloud(*cloud, filter, *newCloud);
+ 
+   // save covariances of trackable points
+@@ -614,7 +622,7 @@
+     std::vector<float> k_sq_distances;
+     int num_reliable_neighbors = 0;
+     kdtree.nearestKSearch(cloud->at(i), k_correspondences_, k_indices, k_sq_distances);
+-    
++
+     // Get number of reliable neighbors
+     for (int j = 0; j < k_indices.size(); j++) {
+       if (k_sq_distances[j] < knn_max_distance_){
+@@ -622,30 +630,44 @@
+       }
+     }
+ 
++    // Degenerate: no reliable neighbors -> use identity and skip heavy math
++    if (num_reliable_neighbors < 3) {
++      rotationsq[4*i+0] = 0.0f;
++      rotationsq[4*i+1] = 0.0f;
++      rotationsq[4*i+2] = 0.0f;
++      rotationsq[4*i+3] = 1.0f;
++      scales[3*i+0] = 1e-3f;
++      scales[3*i+1] = 1e-3f;
++      scales[3*i+2] = 1e-3f;
++      if (filter[i] != 0) {
++        covariances[filter[i]-1].setZero();
++        covariances[filter[i]-1].template block<3, 3>(0, 0) = Eigen::Matrix3d::Identity() * 1e-3;
++        newCloud->points[filter[i]-1] = cloud->at(i);
++      }
++      continue;
++    }
+ 
+     Eigen::Matrix<double, 4, -1> neighbors(4, num_reliable_neighbors);
+-    for (int j = 0; j < k_indices.size(); j++) {
++    int col = 0;
++    for (int j = 0; j < k_indices.size() && col < num_reliable_neighbors; j++) {
+       if (k_sq_distances[j] < knn_max_distance_){
+-        neighbors.col(j) = cloud->at(k_indices[j]).getVector4fMap().template cast<double>();
++        neighbors.col(col++) = cloud->at(k_indices[j]).getVector4fMap().template cast<double>();
+       }
+     }
+ 
+-    
+     neighbors.colwise() -= neighbors.rowwise().mean().eval();
+-    Eigen::Matrix4d cov = neighbors * neighbors.transpose() / k_correspondences_;
+-    
++    Eigen::Matrix4d cov = neighbors * neighbors.transpose() / static_cast<double>(num_reliable_neighbors);
++
+     //compute raw scale and quaternions using cov
+     Eigen::JacobiSVD<Eigen::Matrix3d> svd(cov.block<3, 3>(0, 0), Eigen::ComputeFullU | Eigen::ComputeFullV);
+     Eigen::Quaterniond qfrommat(svd.matrixU());
+     qfrommat.normalize();
+-//    Eigen::Vector4d q = {qfrommat.x(), qfrommat.y(), qfrommat.z(), qfrommat.w()};
+-    // rotationsq.insert(rotationsq.end(), { (float)qfrommat.x(), (float)qfrommat.y(), (float)qfrommat.z(), (float)qfrommat.w()});
+     rotationsq[4*i+0] = (float)qfrommat.x();
+     rotationsq[4*i+1] = (float)qfrommat.y();
+     rotationsq[4*i+2] = (float)qfrommat.z();
+     rotationsq[4*i+3] = (float)qfrommat.w();
+-    Eigen::Vector3d scale = svd.singularValues().cwiseSqrt();
+-    // scales.insert(scales.end(), {(float)scale.x(), (float)scale.y(), (float)scale.z()});
++    // Clamp singular values to non-negative before sqrt (guard against denormals)
++    Eigen::Vector3d scale = svd.singularValues().array().max(0.0).sqrt();
+     scales[3*i+0] = (float)scale.x();
+     scales[3*i+1] = (float)scale.y();
+     scales[3*i+2] = (float)scale.z();
+@@ -721,6 +743,9 @@
+ 
+   typename pcl::PointCloud<PointT>::Ptr newCloud(new pcl::PointCloud<PointT>);
+   newCloud->points.resize(target_num_trackable_points_);
++  newCloud->width = target_num_trackable_points_;
++  newCloud->height = 1;
++  newCloud->is_dense = true;
+   // pcl::copyPointCloud(*cloud, filter, *newCloud);
+ 
+   // save covariances of trackable points
+@@ -743,28 +768,44 @@
+       }
+     }
+ 
++    // Degenerate: no reliable neighbors -> use identity and skip heavy math
++    if (num_reliable_neighbors < 3) {
++      rotationsq[4*i+0] = 0.0f;
++      rotationsq[4*i+1] = 0.0f;
++      rotationsq[4*i+2] = 0.0f;
++      rotationsq[4*i+3] = 1.0f;
++      scales[3*i+0] = 1e-3f;
++      scales[3*i+1] = 1e-3f;
++      scales[3*i+2] = 1e-3f;
++      if (filter[i] != 0) {
++        covariances[filter[i]-1].setZero();
++        covariances[filter[i]-1].template block<3, 3>(0, 0) = Eigen::Matrix3d::Identity() * 1e-3;
++        newCloud->points[filter[i]-1] = cloud->at(i);
++      }
++      continue;
++    }
++
+     Eigen::Matrix<double, 4, -1> neighbors(4, num_reliable_neighbors);
+-    for (int j = 0; j < k_indices.size(); j++) {
++    int col = 0;
++    for (int j = 0; j < k_indices.size() && col < num_reliable_neighbors; j++) {
+       if (k_sq_distances[j] < knn_max_distance_){
+-        neighbors.col(j) = cloud->at(k_indices[j]).getVector4fMap().template cast<double>();
++        neighbors.col(col++) = cloud->at(k_indices[j]).getVector4fMap().template cast<double>();
+       }
+     }
+ 
+     neighbors.colwise() -= neighbors.rowwise().mean().eval();
+-    Eigen::Matrix4d cov = neighbors * neighbors.transpose() / k_correspondences_;
+-    
++    Eigen::Matrix4d cov = neighbors * neighbors.transpose() / static_cast<double>(num_reliable_neighbors);
++
+     //compute raw scale and quaternions using cov
+     Eigen::JacobiSVD<Eigen::Matrix3d> svd(cov.block<3, 3>(0, 0), Eigen::ComputeFullU | Eigen::ComputeFullV);
+     Eigen::Quaterniond qfrommat(svd.matrixU());
+     qfrommat.normalize();
+-//    Eigen::Vector4d q = {qfrommat.x(), qfrommat.y(), qfrommat.z(), qfrommat.w()};
+-    // rotationsq.insert(rotationsq.end(), { (float)qfrommat.x(), (float)qfrommat.y(), (float)qfrommat.z(), (float)qfrommat.w()});
+     rotationsq[4*i+0] = (float)qfrommat.x();
+     rotationsq[4*i+1] = (float)qfrommat.y();
+     rotationsq[4*i+2] = (float)qfrommat.z();
+     rotationsq[4*i+3] = (float)qfrommat.w();
+-    Eigen::Vector3d scale = svd.singularValues().cwiseSqrt();
+-    // scales.insert(scales.end(), {(float)scale.x(), (float)scale.y(), (float)scale.z()});
++    // Clamp singular values to non-negative before sqrt (guard against denormals)
++    Eigen::Vector3d scale = svd.singularValues().array().max(0.0).sqrt();
+     scales[3*i+0] = (float)scale.x();
+     scales[3*i+1] = (float)scale.y();
+     scales[3*i+2] = (float)scale.z();
+--- a/include/fast_gicp/gicp/impl/lsq_registration_impl.hpp
++++ b/include/fast_gicp/gicp/impl/lsq_registration_impl.hpp
+@@ -74,7 +74,6 @@
+   }
+ 
+   final_transformation_ = x0.cast<float>().matrix();
+-  pcl::transformPointCloud(*input_, output, final_transformation_);
+ }
+ 
+ template <typename PointTarget, typename PointSource>

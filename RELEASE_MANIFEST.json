@@ -1,0 +1,256 @@
+{
+  "format_version": 1,
+  "files": {
+    ".gitignore": {
+      "sha256": "c00ea5e6f2253f84e228bb8dc1c123f211a9c01642b408bb7bd1bccf842e6334",
+      "bytes": 112,
+      "change": "added_to_release_copy"
+    },
+    "detex/__init__.py": {
+      "sha256": "f9bb78898a38f5899a3df1b6230734b7200f607270c129a68771d0cadf97607b",
+      "bytes": 1503,
+      "original_sha256": "f9bb78898a38f5899a3df1b6230734b7200f607270c129a68771d0cadf97607b",
+      "change": "unchanged"
+    },
+    "detex/boards.py": {
+      "sha256": "040fbd83bd9112a594f92e46d2858fb2b43f690b1720cbe4422411bfd8170460",
+      "bytes": 7492,
+      "original_sha256": "040fbd83bd9112a594f92e46d2858fb2b43f690b1720cbe4422411bfd8170460",
+      "change": "unchanged"
+    },
+    "detex/channel.py": {
+      "sha256": "bcc4eae51f5233dcefea1fed8d60389a187b7aa24a3e938fa4da7e1409778ab3",
+      "bytes": 19499,
+      "original_sha256": "bcc4eae51f5233dcefea1fed8d60389a187b7aa24a3e938fa4da7e1409778ab3",
+      "change": "unchanged"
+    },
+    "detex/errors.py": {
+      "sha256": "2d3cec6d9d1169bb1eb4a9478e46d08ed1cf6c7144b7ec2f3e6aa858e7afffe7",
+      "bytes": 848,
+      "original_sha256": "2d3cec6d9d1169bb1eb4a9478e46d08ed1cf6c7144b7ec2f3e6aa858e7afffe7",
+      "change": "unchanged"
+    },
+    "detex/fabric.py": {
+      "sha256": "05a1dc40ece80067f0a4dc06770d47952b857b5c968151c931ca82a3f66766fa",
+      "bytes": 3256,
+      "original_sha256": "05a1dc40ece80067f0a4dc06770d47952b857b5c968151c931ca82a3f66766fa",
+      "change": "unchanged"
+    },
+    "detex/perturb.py": {
+      "sha256": "f0f1cd498f9c97d41fd8eb85b8075e8e3449f8f63c60da31d585984c7d94b100",
+      "bytes": 1821,
+      "original_sha256": "f0f1cd498f9c97d41fd8eb85b8075e8e3449f8f63c60da31d585984c7d94b100",
+      "change": "unchanged"
+    },
+    "detex/role.py": {
+      "sha256": "fe1a663788d5be9cd3e1c7038a08cb937abc501d34d1a8233af31ca33d9a7efa",
+      "bytes": 37441,
+      "original_sha256": "fe1a663788d5be9cd3e1c7038a08cb937abc501d34d1a8233af31ca33d9a7efa",
+      "change": "unchanged"
+    },
+    "detex/schedule.py": {
+      "sha256": "fb46aae74239e02beae5e765d6697801ebae773f93ca4f74a6ed7f6073fc5534",
+      "bytes": 11588,
+      "original_sha256": "fb46aae74239e02beae5e765d6697801ebae773f93ca4f74a6ed7f6073fc5534",
+      "change": "unchanged"
+    },
+    "detex/shared.py": {
+      "sha256": "c1d448eb8576306166451ff431e474ad435aa3883ba59ef38a43cdd37247387b",
+      "bytes": 4124,
+      "original_sha256": "c1d448eb8576306166451ff431e474ad435aa3883ba59ef38a43cdd37247387b",
+      "change": "unchanged"
+    },
+    "detex/sync.py": {
+      "sha256": "f451c33ccea75c0f523783f0ae953f7bd684db43063aa6b469f8bf6734ca6133",
+      "bytes": 4718,
+      "original_sha256": "f451c33ccea75c0f523783f0ae953f7bd684db43063aa6b469f8bf6734ca6133",
+      "change": "unchanged"
+    },
+    "detex/tags.py": {
+      "sha256": "a9b9bce8c45467d4dffc1137f08216d8fb71e33abd13d873f012b199133557da",
+      "bytes": 1915,
+      "original_sha256": "a9b9bce8c45467d4dffc1137f08216d8fb71e33abd13d873f012b199133557da",
+      "change": "unchanged"
+    },
+    "detex/trace.py": {
+      "sha256": "54eca669664f1bcae4bda4f03a52e5ba1e39e7bbc3a6233775c6550ac9576b87",
+      "bytes": 5628,
+      "original_sha256": "54eca669664f1bcae4bda4f03a52e5ba1e39e7bbc3a6233775c6550ac9576b87",
+      "change": "unchanged"
+    },
+    "EXCLUSIONS.md": {
+      "sha256": "9ca87a9f44f7f7d35aeee03372e9f552243978cf91ce93e0bf3c0c649034e7fa",
+      "bytes": 2769,
+      "change": "added_to_release_copy"
+    },
+    "GS-ICP-SLAM-det/detex_fabric.py": {
+      "sha256": "13606b4699676707123fe72bf0be39aa4505c917bcfa67b7906723617226dc2a",
+      "bytes": 5845,
+      "original_sha256": "13606b4699676707123fe72bf0be39aa4505c917bcfa67b7906723617226dc2a",
+      "change": "unchanged"
+    },
+    "GS-ICP-SLAM-det/gs_icp_slam.py": {
+      "sha256": "d78be63aede468121806e9137ee971f1998f2dd28822dae361c39662fe765c93",
+      "bytes": 12040,
+      "original_sha256": "bf0803cd514513b328911e4b1061e5da0f33c1f96f1c7a55812e42049f6a4696",
+      "change": "modified_in_release_copy"
+    },
+    "GS-ICP-SLAM-det/gs_icp_slam_exchange.py": {
+      "sha256": "28725009283baff24a7629ceb543e94c2a93253383897a25b83ba0e929c61528",
+      "bytes": 12348,
+      "original_sha256": "6dcfe7e519fc666589345cec4facf9f745b3f9924165977c9851b77443d0e216",
+      "change": "modified_in_release_copy"
+    },
+    "GS-ICP-SLAM-det/LICENSE": {
+      "sha256": "47e932a4ffe4af51675b148b81fd6b53ad434e9f4f6ece960caf94869dcc8f7a",
+      "bytes": 1087,
+      "original_sha256": "47e932a4ffe4af51675b148b81fd6b53ad434e9f4f6ece960caf94869dcc8f7a",
+      "change": "unchanged"
+    },
+    "GS-ICP-SLAM-det/mp_Mapper.py": {
+      "sha256": "e8f02635947d8cee8b88428f83fb53758cc1d2bb77b6bd035042f180d2c5b334",
+      "bytes": 19140,
+      "original_sha256": "cf56752a137df8ea0d573d3894d19d5df2df76414476f95ae3d275a6447b9bd2",
+      "change": "modified_in_release_copy"
+    },
+    "GS-ICP-SLAM-det/mp_Mapper_exchange.py": {
+      "sha256": "fd3ede6815d0ace32b312c8b6601934fb03f0e5e767b489df0ebde1ef65840bc",
+      "bytes": 10850,
+      "original_sha256": "f00e2b38e56ea0b9cda70c0a046ca0ce39118b1d4ce718b19d74a24acd8d149d",
+      "change": "modified_in_release_copy"
+    },
+    "GS-ICP-SLAM-det/mp_Tracker.py": {
+      "sha256": "41be8552c70cec8ded5d54cfdbabe3c3c21b7a90835a51cf43a8443e190b05d6",
+      "bytes": 22830,
+      "original_sha256": "6b90c3dcbe261fde99f01a5b4355cad0b6e610c6acabceefc87c0ae1d47f838a",
+      "change": "modified_in_release_copy"
+    },
+    "GS-ICP-SLAM-det/mp_Tracker_exchange.py": {
+      "sha256": "b0513c191b31f2c6d1e7561b75504cdee4b6cbcd5bfe0cdc664c97087adb1d64",
+      "bytes": 9825,
+      "original_sha256": "0bf0a537ab5e1332c23867b4910a80a0004c446fcf9529ee351408c9531093ac",
+      "change": "modified_in_release_copy"
+    },
+    "LICENSE": {
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358,
+      "original_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "change": "unchanged"
+    },
+    "LICENSE_NOTES.md": {
+      "sha256": "ea1db327e9282cb6b9e7c22b7c607a36fcafa4bcc26d1721d0a26d15be1b8441",
+      "bytes": 2608,
+      "original_sha256": "86a3e54670791d8bf35120dd040e175ab527e2b5139e2291eae1b16dd94f1b04",
+      "change": "modified_in_release_copy"
+    },
+    "LICENSES/FastGICP-BSD-3-Clause.txt": {
+      "sha256": "62091f5ee5b6cf36ea37faae5db95b8679c14e1b071911af0be7abc72c461c9c",
+      "bytes": 1517,
+      "change": "added_to_release_copy"
+    },
+    "LICENSES/GS-ICP-SLAM-MIT.txt": {
+      "sha256": "47e932a4ffe4af51675b148b81fd6b53ad434e9f4f6ece960caf94869dcc8f7a",
+      "bytes": 1087,
+      "change": "added_to_release_copy"
+    },
+    "LICENSES/GS-rasterizer-LICENSE.md": {
+      "sha256": "cd5c95b3cfff3acc1bd412420c770f88809331c3db6872df11a970147aa8e81f",
+      "bytes": 4275,
+      "change": "added_to_release_copy"
+    },
+    "LICENSES/MonoGS-rasterizer-LICENSE.md": {
+      "sha256": "cd5c95b3cfff3acc1bd412420c770f88809331c3db6872df11a970147aa8e81f",
+      "bytes": 4275,
+      "change": "added_to_release_copy"
+    },
+    "LICENSES/TorchBeast-Apache-2.0.txt": {
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+      "bytes": 11357,
+      "change": "added_to_release_copy"
+    },
+    "MonoGS-det/detex_fabric.py": {
+      "sha256": "2fad241380e7990fae80c4436cb9ac830d9725f7a4c29022fdda50d73e45cbc2",
+      "bytes": 15760,
+      "original_sha256": "0984efcbd83201a1dc179e7aba90773602ebc8dbb9fc246fd8f29e0e4952acc8",
+      "change": "modified_in_release_copy"
+    },
+    "patches/gsicp-diff-gaussian-rasterization-deterministic-backward.patch": {
+      "sha256": "3781f4831880955318d90cb33a414daa3d521dc68bf1a490c3a3d0b6c68d433a",
+      "bytes": 22151,
+      "original_sha256": "3781f4831880955318d90cb33a414daa3d521dc68bf1a490c3a3d0b6c68d433a",
+      "change": "unchanged"
+    },
+    "patches/gsicp-fast_gicp-reliable-neighbours.patch": {
+      "sha256": "737a70ae61df0cb617bc536755627b8681dbf871ea4cd27e4e4a5223b8483821",
+      "bytes": 7495,
+      "original_sha256": "737a70ae61df0cb617bc536755627b8681dbf871ea4cd27e4e4a5223b8483821",
+      "change": "unchanged"
+    },
+    "patches/monogs-diff-gaussian-rasterization-deterministic-backward.patch": {
+      "sha256": "90c7ddb171e6bf3a11815c759667669bb35bfbbb575ec02e9a838add31f9ae25",
+      "bytes": 23783,
+      "original_sha256": "90c7ddb171e6bf3a11815c759667669bb35bfbbb575ec02e9a838add31f9ae25",
+      "change": "unchanged"
+    },
+    "patches/NOTICES.md": {
+      "sha256": "42719857294c5490fcbc2c4198af840635e14945ade3343b2e0d6fb4752f6872",
+      "bytes": 1179,
+      "change": "added_to_release_copy"
+    },
+    "patches/README.md": {
+      "sha256": "96dd77b06b38f2b8f2e05faa9e1638e8bace6e46504889b450ea530626f3ab63",
+      "bytes": 2308,
+      "original_sha256": "2872cc2469a1ec384101d5c9e157b606122caee726c8635e2ba62516a4a0cb93",
+      "change": "modified_in_release_copy"
+    },
+    "README.md": {
+      "sha256": "3821402c39eab6987846137c50953dadaf65237c67f0ec0c3eb68a0cda661e45",
+      "bytes": 3415,
+      "original_sha256": "1d1b796b3afa3f7de3525f91192ce9479c1d277f15a1b08f148def64f8a88057",
+      "change": "modified_in_release_copy"
+    },
+    "RELEASE_CHANGES.md": {
+      "sha256": "11311e76a59a6d52d7a5be8f07c8b78d3f40cf59346d134ca353ba0e8c379cc4",
+      "bytes": 1745,
+      "change": "added_to_release_copy"
+    },
+    "REPRODUCE.md": {
+      "sha256": "b86a4266ea92dca0f0e6aa436c455b561711176e83cf8287be243d1010a887a4",
+      "bytes": 4423,
+      "original_sha256": "3cdde06fb9b07f734733e59072ebc396e79cae3adbfddda72bfd87c7da080b0d",
+      "change": "modified_in_release_copy"
+    },
+    "SOURCE_MAP.json": {
+      "sha256": "f69f2b5001ee7a1135701367cc9f9013786bf083f33f2cd51a82c7fca966c226",
+      "bytes": 15498,
+      "change": "added_to_release_copy"
+    },
+    "THIRD_PARTY_NOTICES.md": {
+      "sha256": "61bc529a14794391292c473d2137e7cdcbcf9c70d99e65eb7ba97685726f61d1",
+      "bytes": 2222,
+      "change": "added_to_release_copy"
+    },
+    "tools/verify_release.py": {
+      "sha256": "8d6a98f7a38faa7ef284d0e76d43e0af8772badce4e59608e354d2ebcafc740d",
+      "bytes": 5512,
+      "change": "added_to_release_copy"
+    },
+    "torchbeast-det/m6_detex_fabric.py": {
+      "sha256": "3fbd64b4e58b8074c8b1cdd5b595bea29bae4a44dbb43dfd476cff5e03fbf248",
+      "bytes": 11987,
+      "original_sha256": "3fbd64b4e58b8074c8b1cdd5b595bea29bae4a44dbb43dfd476cff5e03fbf248",
+      "change": "unchanged"
+    },
+    "torchbeast-det/monobeast_exchange.py": {
+      "sha256": "359a6b7dd1c9e8f011b2830e56fbdcb6ffd02e58f765a8a6e045980aaafb0aaf",
+      "bytes": 42859,
+      "original_sha256": "4235f41fe3a36d991176aa1eecf0b24d11877edc501a7cc8f7e97a78abe24c66",
+      "change": "modified_in_release_copy"
+    }
+  },
+  "not_hashed": [
+    "RELEASE_MANIFEST.json",
+    "RELEASE_CHECKS.json"
+  ],
+  "note": "These two metadata files are omitted from self-hashing to avoid circular hashes."
+}

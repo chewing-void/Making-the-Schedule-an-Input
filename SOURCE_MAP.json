@@ -1,0 +1,318 @@
+{
+  "format_version": 1,
+  "license_files": [
+    {
+      "path": "LICENSES/GS-ICP-SLAM-MIT.txt",
+      "source_url": "https://raw.githubusercontent.com/Lab-of-AI-and-Robotics/GS_ICP_SLAM/5f996a872a979406b270fe0ee3b0a8f25c5e9ae3/LICENSE",
+      "sha256": "47e932a4ffe4af51675b148b81fd6b53ad434e9f4f6ece960caf94869dcc8f7a"
+    },
+    {
+      "path": "LICENSES/GS-rasterizer-LICENSE.md",
+      "source_url": "https://raw.githubusercontent.com/Lab-of-AI-and-Robotics/diff-gaussian-rasterization/95dbb69d81449ae56783628803198bea2f42e2c9/LICENSE.md",
+      "sha256": "cd5c95b3cfff3acc1bd412420c770f88809331c3db6872df11a970147aa8e81f"
+    },
+    {
+      "path": "LICENSES/MonoGS-rasterizer-LICENSE.md",
+      "source_url": "https://raw.githubusercontent.com/rmurai0610/diff-gaussian-rasterization-w-pose/43e21bff91cd24986ee3dd52fe0bb06952e50ec7/LICENSE.md",
+      "sha256": "cd5c95b3cfff3acc1bd412420c770f88809331c3db6872df11a970147aa8e81f"
+    },
+    {
+      "path": "LICENSES/FastGICP-BSD-3-Clause.txt",
+      "source_url": "https://raw.githubusercontent.com/Lab-of-AI-and-Robotics/fast_gicp/e2954b1aa06a563d1b2ef2ec5d1fddd1e911d8f4/LICENSE",
+      "sha256": "62091f5ee5b6cf36ea37faae5db95b8679c14e1b071911af0be7abc72c461c9c"
+    },
+    {
+      "path": "LICENSES/TorchBeast-Apache-2.0.txt",
+      "source_url": "https://raw.githubusercontent.com/facebookresearch/torchbeast/0af07b051a2176a8f9fd20c36891ba2bba6bae68/LICENSE",
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd"
+    }
+  ],
+  "source_files": [
+    {
+      "file": "detex/__init__.py",
+      "origin": "Original project implementation (existing declaration; no independent ownership verification)",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "detex/boards.py",
+      "origin": "Original project implementation (existing declaration; no independent ownership verification)",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "detex/channel.py",
+      "origin": "Original project implementation (existing declaration; no independent ownership verification)",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "detex/errors.py",
+      "origin": "Original project implementation (existing declaration; no independent ownership verification)",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "detex/fabric.py",
+      "origin": "Original project implementation (existing declaration; no independent ownership verification)",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "detex/perturb.py",
+      "origin": "Original project implementation (existing declaration; no independent ownership verification)",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "detex/role.py",
+      "origin": "Original project implementation (existing declaration; no independent ownership verification)",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "detex/schedule.py",
+      "origin": "Original project implementation (existing declaration; no independent ownership verification)",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "detex/shared.py",
+      "origin": "Original project implementation (existing declaration; no independent ownership verification)",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "detex/sync.py",
+      "origin": "Original project implementation (existing declaration; no independent ownership verification)",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "detex/tags.py",
+      "origin": "Original project implementation (existing declaration; no independent ownership verification)",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "detex/trace.py",
+      "origin": "Original project implementation (existing declaration; no independent ownership verification)",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "GS-ICP-SLAM-det/gs_icp_slam.py",
+      "origin": "GS-ICP-derived with project integration modifications",
+      "source_url": "https://github.com/Lab-of-AI-and-Robotics/GS_ICP_SLAM/blob/5f996a872a979406b270fe0ee3b0a8f25c5e9ae3/gs_icp_slam.py",
+      "upstream_file": "gs_icp_slam.py",
+      "licenses": [
+        "LICENSES/GS-ICP-SLAM-MIT.txt",
+        "LICENSE"
+      ],
+      "scope": "MIT for upstream portions; Apache-2.0 only for original project contributions",
+      "changes": "Deterministic exchange, execution controls, or adapted tracker/mapper/driver logic; attribution added in partial release"
+    },
+    {
+      "file": "GS-ICP-SLAM-det/mp_Tracker.py",
+      "origin": "GS-ICP-derived with project integration modifications",
+      "source_url": "https://github.com/Lab-of-AI-and-Robotics/GS_ICP_SLAM/blob/5f996a872a979406b270fe0ee3b0a8f25c5e9ae3/mp_Tracker.py",
+      "upstream_file": "mp_Tracker.py",
+      "licenses": [
+        "LICENSES/GS-ICP-SLAM-MIT.txt",
+        "LICENSE"
+      ],
+      "scope": "MIT for upstream portions; Apache-2.0 only for original project contributions",
+      "changes": "Deterministic exchange, execution controls, or adapted tracker/mapper/driver logic; attribution added in partial release"
+    },
+    {
+      "file": "GS-ICP-SLAM-det/mp_Mapper.py",
+      "origin": "GS-ICP-derived with project integration modifications",
+      "source_url": "https://github.com/Lab-of-AI-and-Robotics/GS_ICP_SLAM/blob/5f996a872a979406b270fe0ee3b0a8f25c5e9ae3/mp_Mapper.py",
+      "upstream_file": "mp_Mapper.py",
+      "licenses": [
+        "LICENSES/GS-ICP-SLAM-MIT.txt",
+        "LICENSE"
+      ],
+      "scope": "MIT for upstream portions; Apache-2.0 only for original project contributions",
+      "changes": "Deterministic exchange, execution controls, or adapted tracker/mapper/driver logic; attribution added in partial release"
+    },
+    {
+      "file": "GS-ICP-SLAM-det/gs_icp_slam_exchange.py",
+      "origin": "GS-ICP-derived with project integration modifications",
+      "source_url": "https://github.com/Lab-of-AI-and-Robotics/GS_ICP_SLAM/blob/5f996a872a979406b270fe0ee3b0a8f25c5e9ae3/gs_icp_slam.py",
+      "upstream_file": "gs_icp_slam.py",
+      "licenses": [
+        "LICENSES/GS-ICP-SLAM-MIT.txt",
+        "LICENSE"
+      ],
+      "scope": "MIT for upstream portions; Apache-2.0 only for original project contributions",
+      "changes": "Deterministic exchange, execution controls, or adapted tracker/mapper/driver logic; attribution added in partial release"
+    },
+    {
+      "file": "GS-ICP-SLAM-det/mp_Tracker_exchange.py",
+      "origin": "GS-ICP-derived with project integration modifications",
+      "source_url": "https://github.com/Lab-of-AI-and-Robotics/GS_ICP_SLAM/blob/5f996a872a979406b270fe0ee3b0a8f25c5e9ae3/mp_Tracker.py",
+      "upstream_file": "mp_Tracker.py",
+      "licenses": [
+        "LICENSES/GS-ICP-SLAM-MIT.txt",
+        "LICENSE"
+      ],
+      "scope": "MIT for upstream portions; Apache-2.0 only for original project contributions",
+      "changes": "Deterministic exchange, execution controls, or adapted tracker/mapper/driver logic; attribution added in partial release"
+    },
+    {
+      "file": "GS-ICP-SLAM-det/mp_Mapper_exchange.py",
+      "origin": "GS-ICP-derived with project integration modifications",
+      "source_url": "https://github.com/Lab-of-AI-and-Robotics/GS_ICP_SLAM/blob/5f996a872a979406b270fe0ee3b0a8f25c5e9ae3/mp_Mapper.py",
+      "upstream_file": "mp_Mapper.py",
+      "licenses": [
+        "LICENSES/GS-ICP-SLAM-MIT.txt",
+        "LICENSE"
+      ],
+      "scope": "MIT for upstream portions; Apache-2.0 only for original project contributions",
+      "changes": "Deterministic exchange, execution controls, or adapted tracker/mapper/driver logic; attribution added in partial release"
+    },
+    {
+      "file": "GS-ICP-SLAM-det/detex_fabric.py",
+      "origin": "Original project adapter under existing declaration; authorship not independently verified",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "MonoGS-det/detex_fabric.py",
+      "origin": "Original project adapter under existing declaration; authorship not independently verified",
+      "licenses": [
+        "LICENSE"
+      ],
+      "interface_reference": "https://github.com/muskie82/MonoGS/blob/6c9254c319d8bff5caeef65259e6bb0941a9b9f6/gaussian_splatting/scene/gaussian_model.py",
+      "changes": "Replaced two quoted upstream expressions with natural-language tensor-layout description; no runtime claim"
+    },
+    {
+      "file": "torchbeast-det/m6_detex_fabric.py",
+      "origin": "Original project adapter under existing declaration; authorship not independently verified",
+      "licenses": [
+        "LICENSE"
+      ]
+    },
+    {
+      "file": "torchbeast-det/monobeast_exchange.py",
+      "origin": "TorchBeast-derived adapter with project modifications",
+      "source_url": "https://github.com/facebookresearch/torchbeast/blob/0af07b051a2176a8f9fd20c36891ba2bba6bae68/torchbeast/monobeast.py",
+      "licenses": [
+        "LICENSES/TorchBeast-Apache-2.0.txt",
+        "LICENSE"
+      ],
+      "changes": "Exchange driver/roles, reporting and startup/stop coordination; restored full Facebook header and modification notice"
+    },
+    {
+      "file": "patches/gsicp-diff-gaussian-rasterization-deterministic-backward.patch",
+      "origin": "Third-party derivative patch",
+      "repository": "https://github.com/Lab-of-AI-and-Robotics/diff-gaussian-rasterization",
+      "commit": "95dbb69d81449ae56783628803198bea2f42e2c9",
+      "upstream_files": [
+        "cuda_rasterizer/backward.cu",
+        "cuda_rasterizer/backward.h",
+        "cuda_rasterizer/rasterizer.h",
+        "cuda_rasterizer/rasterizer_impl.cu",
+        "diff_gaussian_rasterization/__init__.py",
+        "rasterize_points.cu",
+        "rasterize_points.h"
+      ],
+      "source_urls": [
+        "https://github.com/Lab-of-AI-and-Robotics/diff-gaussian-rasterization/blob/95dbb69d81449ae56783628803198bea2f42e2c9/cuda_rasterizer/backward.cu",
+        "https://github.com/Lab-of-AI-and-Robotics/diff-gaussian-rasterization/blob/95dbb69d81449ae56783628803198bea2f42e2c9/cuda_rasterizer/backward.h",
+        "https://github.com/Lab-of-AI-and-Robotics/diff-gaussian-rasterization/blob/95dbb69d81449ae56783628803198bea2f42e2c9/cuda_rasterizer/rasterizer.h",
+        "https://github.com/Lab-of-AI-and-Robotics/diff-gaussian-rasterization/blob/95dbb69d81449ae56783628803198bea2f42e2c9/cuda_rasterizer/rasterizer_impl.cu",
+        "https://github.com/Lab-of-AI-and-Robotics/diff-gaussian-rasterization/blob/95dbb69d81449ae56783628803198bea2f42e2c9/diff_gaussian_rasterization/__init__.py",
+        "https://github.com/Lab-of-AI-and-Robotics/diff-gaussian-rasterization/blob/95dbb69d81449ae56783628803198bea2f42e2c9/rasterize_points.cu",
+        "https://github.com/Lab-of-AI-and-Robotics/diff-gaussian-rasterization/blob/95dbb69d81449ae56783628803198bea2f42e2c9/rasterize_points.h"
+      ],
+      "licenses": [
+        "LICENSES/GS-rasterizer-LICENSE.md"
+      ],
+      "notices": [
+        "patches/NOTICES.md"
+      ],
+      "restrictions": "Gaussian-Splatting: noncommercial research/evaluation; full text controls",
+      "changes": "Fixed-order backward reduction",
+      "git_apply_strip": 1,
+      "patch_context_check": "passed against exact touched files; build/runtime not tested"
+    },
+    {
+      "file": "patches/monogs-diff-gaussian-rasterization-deterministic-backward.patch",
+      "origin": "Third-party derivative patch",
+      "repository": "https://github.com/rmurai0610/diff-gaussian-rasterization-w-pose",
+      "commit": "43e21bff91cd24986ee3dd52fe0bb06952e50ec7",
+      "upstream_files": [
+        "cuda_rasterizer/backward.cu",
+        "cuda_rasterizer/backward.h",
+        "cuda_rasterizer/rasterizer.h",
+        "cuda_rasterizer/rasterizer_impl.cu",
+        "diff_gaussian_rasterization/__init__.py",
+        "rasterize_points.cu",
+        "rasterize_points.h"
+      ],
+      "source_urls": [
+        "https://github.com/rmurai0610/diff-gaussian-rasterization-w-pose/blob/43e21bff91cd24986ee3dd52fe0bb06952e50ec7/cuda_rasterizer/backward.cu",
+        "https://github.com/rmurai0610/diff-gaussian-rasterization-w-pose/blob/43e21bff91cd24986ee3dd52fe0bb06952e50ec7/cuda_rasterizer/backward.h",
+        "https://github.com/rmurai0610/diff-gaussian-rasterization-w-pose/blob/43e21bff91cd24986ee3dd52fe0bb06952e50ec7/cuda_rasterizer/rasterizer.h",
+        "https://github.com/rmurai0610/diff-gaussian-rasterization-w-pose/blob/43e21bff91cd24986ee3dd52fe0bb06952e50ec7/cuda_rasterizer/rasterizer_impl.cu",
+        "https://github.com/rmurai0610/diff-gaussian-rasterization-w-pose/blob/43e21bff91cd24986ee3dd52fe0bb06952e50ec7/diff_gaussian_rasterization/__init__.py",
+        "https://github.com/rmurai0610/diff-gaussian-rasterization-w-pose/blob/43e21bff91cd24986ee3dd52fe0bb06952e50ec7/rasterize_points.cu",
+        "https://github.com/rmurai0610/diff-gaussian-rasterization-w-pose/blob/43e21bff91cd24986ee3dd52fe0bb06952e50ec7/rasterize_points.h"
+      ],
+      "licenses": [
+        "LICENSES/MonoGS-rasterizer-LICENSE.md"
+      ],
+      "notices": [
+        "patches/NOTICES.md"
+      ],
+      "restrictions": "Gaussian-Splatting: noncommercial research/evaluation; full text controls",
+      "changes": "Fixed-order backward reduction",
+      "git_apply_strip": 2,
+      "patch_context_check": "passed against exact touched files; build/runtime not tested"
+    },
+    {
+      "file": "patches/gsicp-fast_gicp-reliable-neighbours.patch",
+      "origin": "Third-party derivative patch",
+      "repository": "https://github.com/Lab-of-AI-and-Robotics/fast_gicp",
+      "commit": "e2954b1aa06a563d1b2ef2ec5d1fddd1e911d8f4",
+      "upstream_files": [
+        "include/fast_gicp/gicp/impl/fast_gicp_impl.hpp",
+        "include/fast_gicp/gicp/impl/lsq_registration_impl.hpp"
+      ],
+      "source_urls": [
+        "https://github.com/Lab-of-AI-and-Robotics/fast_gicp/blob/e2954b1aa06a563d1b2ef2ec5d1fddd1e911d8f4/include/fast_gicp/gicp/impl/fast_gicp_impl.hpp",
+        "https://github.com/Lab-of-AI-and-Robotics/fast_gicp/blob/e2954b1aa06a563d1b2ef2ec5d1fddd1e911d8f4/include/fast_gicp/gicp/impl/lsq_registration_impl.hpp"
+      ],
+      "licenses": [
+        "LICENSES/FastGICP-BSD-3-Clause.txt"
+      ],
+      "changes": "Reliable-neighbour and degenerate covariance handling",
+      "git_apply_strip": 1,
+      "patch_context_check": "passed against exact touched files; build/runtime not tested"
+    }
+  ],
+  "excluded_files": {
+    "MonoGS-det/slam_frontend_exchange.py": "Transcribed MonoGS frontend; restrictive upstream license; not distributed.",
+    "MonoGS-det/slam_backend_exchange.py": "Transcribed MonoGS backend; restrictive upstream license; not distributed.",
+    "MonoGS-det/slam_exchange.py": "Upstream-derived boundary unresolved; depends on excluded frontend/backend.",
+    "MonoGS-det/monogs_det_setup.py": "Provenance of locally added GS-ICP seed helper remains unconfirmed; excluded conservatively.",
+    "GS-ICP-SLAM-det/gaussian_renderer/__init__.py": "Inria noncommercial header conflicts with blanket MIT treatment; exact inherited license chain not resolved.",
+    "GS-ICP-SLAM-det/utils/general_utils.py": "Inria header and Plenoxels/JaxNeRF attribution; exact inherited license chain not resolved."
+  },
+  "review_limit": "Static provenance screening, not legal clearance. Original contribution ownership and all runtime claims remain unverified."
+}

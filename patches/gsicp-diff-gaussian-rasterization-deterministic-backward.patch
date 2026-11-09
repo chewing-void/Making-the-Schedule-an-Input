@@ -1,0 +1,621 @@
+diff --git a/cuda_rasterizer/backward.cu b/cuda_rasterizer/backward.cu
+index e356a85..b3a6e74 100644
+--- a/cuda_rasterizer/backward.cu
++++ b/cuda_rasterizer/backward.cu
+@@ -656,6 +656,287 @@ renderCUDA(
+ 	}
+ }
+ 
++// Deterministic rendering backward for the GS-ICP RGB + dedicated-depth
++// rasterizer. Each tile/Gaussian instance owns one scratch row. Pixel
++// contributions are reduced by a fixed warp tree, then each Gaussian's
++// contiguous y-major/x-major tile segment is summed in slot order.
++template <uint32_t C>
++__global__ void __launch_bounds__(BLOCK_X * BLOCK_Y)
++renderDeterministicCUDA(
++	const uint2* __restrict__ ranges,
++	const uint32_t* __restrict__ point_list,
++	const uint32_t* __restrict__ point_offsets,
++	const int* __restrict__ radii,
++	int W, int H,
++	const float* __restrict__ bg_color,
++	const float2* __restrict__ points_xy_image,
++	const float6* __restrict__ conic_opacity,
++	const float* __restrict__ depths,
++	const float* __restrict__ colors,
++	const float* __restrict__ final_Ts,
++	const float* __restrict__ final_Ts_d,
++	const float* __restrict__ final_accum_prob_d,
++	const uint32_t* __restrict__ n_contrib,
++	const float* __restrict__ final_depth,
++	const float* __restrict__ dL_dpixels_depth,
++	const float* __restrict__ dL_dpixels,
++	float* __restrict__ tile_gradients)
++{
++	// C colors + depth + mean2D(2) + conic(x,y,w,i,j) + opacity.
++	constexpr int GRAD_COMPONENTS = C + 9;
++	constexpr int WARPS_PER_BLOCK = BLOCK_SIZE / 32;
++
++	auto block = cg::this_thread_block();
++	const uint32_t horizontal_blocks = (W + BLOCK_X - 1) / BLOCK_X;
++	const uint32_t vertical_blocks = (H + BLOCK_Y - 1) / BLOCK_Y;
++	const uint2 pix_min = { block.group_index().x * BLOCK_X, block.group_index().y * BLOCK_Y };
++	const uint2 pix = { pix_min.x + block.thread_index().x, pix_min.y + block.thread_index().y };
++	const uint32_t pix_id = W * pix.y + pix.x;
++	const float2 pixf = { (float)pix.x, (float)pix.y };
++	const bool inside = pix.x < W && pix.y < H;
++	const uint2 range = ranges[block.group_index().y * horizontal_blocks + block.group_index().x];
++	const int rounds = ((range.y - range.x + BLOCK_SIZE - 1) / BLOCK_SIZE);
++	int toDo = range.y - range.x;
++
++	__shared__ uint32_t collected_slot[BLOCK_SIZE];
++	__shared__ float2 collected_xy[BLOCK_SIZE];
++	__shared__ float6 collected_conic_opacity[BLOCK_SIZE];
++	__shared__ float collected_colors[C * BLOCK_SIZE];
++	__shared__ float collected_depths[BLOCK_SIZE];
++	__shared__ float warp_sums[GRAD_COMPONENTS * WARPS_PER_BLOCK];
++
++	const float T_final = inside ? final_Ts[pix_id] : 0;
++	float T = T_final;
++	const float T_final_d = inside ? final_Ts_d[pix_id] : 0;
++	float T_d = T_final_d;
++	const float accum_prob_d_final = inside ? final_accum_prob_d[pix_id] : 1.f;
++	float accum_prob_d = accum_prob_d_final;
++	uint32_t contributor = toDo;
++	const int last_contributor = inside ? n_contrib[pix_id] : 0;
++	const float final_depth_d = inside ? final_depth[pix_id] : 0;
++	(void)final_depth_d;
++
++	float accum_rec[C] = { 0 };
++	float accum_rec_d = 0;
++	float accum_rec_probd = 0;
++	float dL_dpixel[C] = { 0 };
++	float dL_dpixel_depth = 0;
++	if (inside)
++	{
++		for (int ch = 0; ch < C; ch++)
++			dL_dpixel[ch] = dL_dpixels[ch * H * W + pix_id];
++		dL_dpixel_depth = dL_dpixels_depth[pix_id];
++	}
++
++	float last_alpha = 0;
++	float last_alpha_d = 0.99f;
++	float last_color[C] = { 0 };
++	float last_depth = 0;
++	const float ddelx_dx = 0.5f * W;
++	const float ddely_dy = 0.5f * H;
++	const int lane = block.thread_rank() & 31;
++	const int warp = block.thread_rank() >> 5;
++	const dim3 tile_grid(horizontal_blocks, vertical_blocks, 1);
++
++	for (int i = 0; i < rounds; i++, toDo -= BLOCK_SIZE)
++	{
++		block.sync();
++		const int progress = i * BLOCK_SIZE + block.thread_rank();
++		if (range.x + progress < range.y)
++		{
++			const int coll_id = point_list[range.y - progress - 1];
++			collected_xy[block.thread_rank()] = points_xy_image[coll_id];
++			collected_conic_opacity[block.thread_rank()] = conic_opacity[coll_id];
++			for (int ch = 0; ch < C; ch++)
++				collected_colors[ch * BLOCK_SIZE + block.thread_rank()] = colors[coll_id * C + ch];
++			collected_depths[block.thread_rank()] = depths[coll_id];
++
++			uint2 rect_min, rect_max;
++			getRect(points_xy_image[coll_id], radii[coll_id], rect_min, rect_max, tile_grid);
++			const uint32_t base = coll_id == 0 ? 0 : point_offsets[coll_id - 1];
++			const uint32_t local_x = block.group_index().x - rect_min.x;
++			const uint32_t local_y = block.group_index().y - rect_min.y;
++			collected_slot[block.thread_rank()] =
++				base + local_y * (rect_max.x - rect_min.x) + local_x;
++		}
++		block.sync();
++
++		const int batch_size = min(BLOCK_SIZE, toDo);
++		for (int j = 0; j < batch_size; j++)
++		{
++			float contribution[GRAD_COMPONENTS] = { 0 };
++			if (inside)
++			{
++				contributor--;
++				if (contributor < last_contributor)
++				{
++					const float2 xy = collected_xy[j];
++					const float2 d = { xy.x - pixf.x, xy.y - pixf.y };
++					const float6 con_o = collected_conic_opacity[j];
++					const float power = -0.5f * (con_o.x * d.x * d.x + con_o.z * d.y * d.y) - con_o.y * d.x * d.y;
++					if (!(power > 0.0f))
++					{
++						const float G = exp(power);
++						const float alpha = min(0.99f, con_o.w * G);
++						if (!(alpha < 1.0f / 255.0f))
++						{
++							T = T / (1.f - alpha);
++							const float dchannel_dcolor = alpha * T;
++							float dL_dalpha = 0.0f;
++							for (int ch = 0; ch < C; ch++)
++							{
++								const float color = collected_colors[ch * BLOCK_SIZE + j];
++								accum_rec[ch] = last_alpha * last_color[ch] + (1.f - last_alpha) * accum_rec[ch];
++								last_color[ch] = color;
++								const float dL_dchannel = dL_dpixel[ch];
++								dL_dalpha += (color - accum_rec[ch]) * dL_dchannel;
++								contribution[ch] = dchannel_dcolor * dL_dchannel;
++							}
++							dL_dalpha *= T;
++							last_alpha = alpha;
++							float bg_dot_dpixel = 0;
++							for (int ch = 0; ch < C; ch++)
++								bg_dot_dpixel += bg_color[ch] * dL_dpixel[ch];
++							dL_dalpha += (-T_final / (1.f - alpha)) * bg_dot_dpixel;
++
++							const float power_d = -0.5f * (con_o.x * d.x * d.x + con_o.z * d.y * d.y) - con_o.y * d.x * d.y;
++							if (!(power_d > 0.0f))
++							{
++								const float G_d = exp(power_d);
++								const float alpha_d = min(0.99f, con_o.w * G_d);
++								if (!(alpha < 1.0f / 255.0f))
++								{
++									T_d = T_d / (1.f - alpha_d);
++									const float covzx = con_o.i;
++									const float covyz = con_o.j;
++									const float dL_dchanneld = dL_dpixel_depth;
++									const float depth = collected_depths[j]
++										- (covzx * con_o.x + covyz * con_o.y) * d.x
++										- (covzx * con_o.y + covyz * con_o.z) * d.y;
++									const float dchanneld_ddepth = alpha_d * T_d;
++									contribution[C + 0] = dchanneld_ddepth * dL_dchanneld;
++									const float dchanneld_dcovzx = (-con_o.x * d.x - con_o.y * d.y) * alpha_d * T_d;
++									const float dchanneld_dcovyz = (-con_o.y * d.x) * alpha_d * T_d;
++									const float dchanneld_dconox = (-covzx * d.x) * alpha_d * T_d;
++									const float dchanneld_dconoy = (-covyz * d.x - covzx * d.y) * alpha_d * T_d;
++									const float dchanneld_dconoz = (-covyz * d.y) * alpha_d * T_d;
++									const float dchanneld_ddelx = -(covzx * con_o.x + covyz * con_o.y) * alpha_d * T_d;
++									const float dchanneld_ddely = -(covzx * con_o.y + covyz * con_o.z) * alpha_d * T_d;
++
++									accum_rec_d = last_alpha_d * last_depth + (1.f - last_alpha_d) * accum_rec_d;
++									accum_rec_probd = last_alpha_d + (1.f - last_alpha_d) * accum_rec_probd;
++									last_depth = depth;
++									last_alpha_d = alpha_d;
++									const float dchanneld_dalpha_d = (depth - accum_rec_d) * T_d;
++									float dL_dalpha_d = dL_dchanneld * dchanneld_dalpha_d;
++									const float bg_dot_ddepth = 15.f * dL_dpixel_depth;
++									dL_dalpha_d += (-T_final_d / (1.f - alpha_d)) * bg_dot_ddepth;
++
++									const float dL_dG = con_o.w * dL_dalpha;
++									const float gdx = G * d.x;
++									const float gdy = G * d.y;
++									const float dG_ddelx = -gdx * con_o.x - gdy * con_o.y;
++									const float dG_ddely = -gdy * con_o.z - gdx * con_o.y;
++									const float dL_dG_d = con_o.w * dL_dalpha_d;
++									const float gdx_d = G_d * d.x;
++									const float gdy_d = G_d * d.y;
++									const float dG_ddelx_d = -gdx_d * con_o.x - gdy_d * con_o.y;
++									const float dG_ddely_d = -gdy_d * con_o.z - gdx_d * con_o.y;
++
++									contribution[C + 1] = dL_dG * dG_ddelx * ddelx_dx
++										+ dL_dG_d * dG_ddelx_d * ddelx_dx
++										+ dL_dchanneld * dchanneld_ddelx * ddelx_dx;
++									contribution[C + 2] = dL_dG * dG_ddely * ddely_dy
++										+ dL_dG_d * dG_ddely_d * ddely_dy
++										+ dL_dchanneld * dchanneld_ddely * ddely_dy;
++									contribution[C + 3] = -0.5f * gdx * d.x * dL_dG
++										- 0.5f * gdx_d * d.x * dL_dG_d
++										+ dL_dchanneld * dchanneld_dconox;
++									contribution[C + 4] = -0.5f * gdx * d.y * dL_dG
++										- 0.5f * gdx_d * d.y * dL_dG_d
++										+ dL_dchanneld * dchanneld_dconoy;
++									contribution[C + 5] = -0.5f * gdy * d.y * dL_dG
++										- 0.5f * gdy_d * d.y * dL_dG_d
++										+ dL_dchanneld * dchanneld_dconoz;
++									contribution[C + 6] = dL_dchanneld * dchanneld_dcovzx;
++									contribution[C + 7] = dL_dchanneld * dchanneld_dcovyz;
++									contribution[C + 8] = G * dL_dalpha + G_d * dL_dalpha_d;
++								}
++							}
++						}
++					}
++				}
++			}
++
++			#pragma unroll
++			for (int component = 0; component < GRAD_COMPONENTS; component++)
++			{
++				float value = contribution[component];
++				#pragma unroll
++				for (int offset = 16; offset > 0; offset >>= 1)
++					value += __shfl_down_sync(0xffffffffu, value, offset);
++				if (lane == 0)
++					warp_sums[component * WARPS_PER_BLOCK + warp] = value;
++			}
++			block.sync();
++
++			if (warp == 0)
++			{
++				#pragma unroll
++				for (int component = 0; component < GRAD_COMPONENTS; component++)
++				{
++					float value = lane < WARPS_PER_BLOCK
++						? warp_sums[component * WARPS_PER_BLOCK + lane]
++						: 0.0f;
++					#pragma unroll
++					for (int offset = 16; offset > 0; offset >>= 1)
++						value += __shfl_down_sync(0xffffffffu, value, offset);
++					if (lane == 0)
++						tile_gradients[collected_slot[j] * GRAD_COMPONENTS + component] = value;
++				}
++			}
++			block.sync();
++		}
++	}
++}
++
++template <uint32_t C>
++__global__ void reduceTileGradientsCUDA(
++	int P,
++	const uint32_t* __restrict__ point_offsets,
++	const float* __restrict__ tile_gradients,
++	float3* __restrict__ dL_dmean2D,
++	float6* __restrict__ dL_dconic2D,
++	float* __restrict__ dL_dopacity,
++	float* __restrict__ dL_ddepths,
++	float* __restrict__ dL_dcolors)
++{
++	constexpr int GRAD_COMPONENTS = C + 9;
++	const int idx = blockIdx.x * blockDim.x + threadIdx.x;
++	if (idx >= P)
++		return;
++
++	float total[GRAD_COMPONENTS] = { 0 };
++	const uint32_t begin = idx == 0 ? 0 : point_offsets[idx - 1];
++	const uint32_t end = point_offsets[idx];
++	for (uint32_t slot = begin; slot < end; slot++)
++	{
++		#pragma unroll
++		for (int component = 0; component < GRAD_COMPONENTS; component++)
++			total[component] += tile_gradients[slot * GRAD_COMPONENTS + component];
++	}
++
++	#pragma unroll
++	for (int ch = 0; ch < C; ch++)
++		dL_dcolors[idx * C + ch] = total[ch];
++	dL_ddepths[idx] = total[C + 0];
++	dL_dmean2D[idx] = { total[C + 1], total[C + 2], 0.0f };
++	dL_dconic2D[idx] = {
++		total[C + 3], total[C + 4], 0.0f, total[C + 5],
++		total[C + 6], total[C + 7] };
++	dL_dopacity[idx] = total[C + 8];
++}
++
+ void BACKWARD::preprocess(
+ 	int P, int D, int M,
+ 	const float3* means3D,
+@@ -770,3 +1051,60 @@ void BACKWARD::render(
+ 		dL_dcolors // grad_color_precomp
+ 		);
+ }
++
++void BACKWARD::render_deterministic(
++	const dim3 grid, dim3 block,
++	const uint2* ranges,
++	const uint32_t* point_list,
++	const uint32_t* point_offsets,
++	const int* radii,
++	int P, int R, int W, int H,
++	const float* bg_color,
++	const float2* means2D,
++	const float6* conic_opacity,
++	const float* depths,
++	const float* colors,
++	const float* final_Ts,
++	const float* final_Ts_d,
++	const float* final_accum_prob_d,
++	const uint32_t* n_contrib,
++	const float* final_depth,
++	const float* dL_dpixels_depth,
++	const float* dL_dpixels,
++	float* tile_gradients,
++	float3* dL_dmean2D,
++	float6* dL_dconic2D,
++	float* dL_dopacity,
++	float* dL_ddepths,
++	float* dL_dcolors)
++{
++	(void)R;
++	renderDeterministicCUDA<NUM_CHANNELS> <<<grid, block>>> (
++		ranges,
++		point_list,
++		point_offsets,
++		radii,
++		W, H,
++		bg_color,
++		means2D,
++		conic_opacity,
++		depths,
++		colors,
++		final_Ts,
++		final_Ts_d,
++		final_accum_prob_d,
++		n_contrib,
++		final_depth,
++		dL_dpixels_depth,
++		dL_dpixels,
++		tile_gradients);
++	reduceTileGradientsCUDA<NUM_CHANNELS> <<<(P + 255) / 256, 256>>> (
++		P,
++		point_offsets,
++		tile_gradients,
++		dL_dmean2D,
++		dL_dconic2D,
++		dL_dopacity,
++		dL_ddepths,
++		dL_dcolors);
++}
+diff --git a/cuda_rasterizer/backward.h b/cuda_rasterizer/backward.h
+index cc5fc47..64e421e 100644
+--- a/cuda_rasterizer/backward.h
++++ b/cuda_rasterizer/backward.h
+@@ -45,6 +45,33 @@ namespace BACKWARD
+ 		float* dL_ddepths, // added
+ 		float* dL_dcolors);
+ 
++	void render_deterministic(
++		const dim3 grid,
++		dim3 block,
++		const uint2* ranges,
++		const uint32_t* point_list,
++		const uint32_t* point_offsets,
++		const int* radii,
++		int P, int R, int W, int H,
++		const float* bg_color,
++		const float2* means2D,
++		const float6* conic_opacity,
++		const float* depths,
++		const float* colors,
++		const float* final_Ts,
++		const float* final_Ts_d,
++		const float* final_accum_prob_d,
++		const uint32_t* n_contrib,
++		const float* final_depth,
++		const float* dL_dpixels_depth,
++		const float* dL_dpixels,
++		float* tile_gradients,
++		float3* dL_dmean2D,
++		float6* dL_dconic2D,
++		float* dL_dopacity,
++		float* dL_ddepths,
++		float* dL_dcolors);
++
+ 	void preprocess(
+ 		int P, int D, int M,
+ 		const float3* means,
+diff --git a/cuda_rasterizer/rasterizer.h b/cuda_rasterizer/rasterizer.h
+index 2d8c9bc..f851242 100644
+--- a/cuda_rasterizer/rasterizer.h
++++ b/cuda_rasterizer/rasterizer.h
+@@ -85,7 +85,9 @@ namespace CudaRasterizer
+ 			float* dL_dsh,
+ 			float* dL_dscale,
+ 			float* dL_drot,
+-			bool debug);
++			bool debug,
++			bool deterministic_backward,
++			float* tile_gradients);
+ 	};
+ };
+ 
+diff --git a/cuda_rasterizer/rasterizer_impl.cu b/cuda_rasterizer/rasterizer_impl.cu
+index eb3b2d2..4ed6d4b 100644
+--- a/cuda_rasterizer/rasterizer_impl.cu
++++ b/cuda_rasterizer/rasterizer_impl.cu
+@@ -379,7 +379,9 @@ void CudaRasterizer::Rasterizer::backward(
+ 	float* dL_dsh,
+ 	float* dL_dscale,
+ 	float* dL_drot,
+-	bool debug)
++	bool debug,
++	bool deterministic_backward,
++	float* tile_gradients)
+ {
+ 	GeometryState geomState = GeometryState::fromChunk(geom_buffer, P);
+ 	BinningState binningState = BinningState::fromChunk(binning_buffer, R);
+@@ -400,29 +402,61 @@ void CudaRasterizer::Rasterizer::backward(
+ 	// opacity and RGB of Gaussians from per-pixel loss gradients.
+ 	// If we were given precomputed colors and not SHs, use them.
+ 	const float* color_ptr = (colors_precomp != nullptr) ? colors_precomp : geomState.rgb;
+-	CHECK_CUDA(BACKWARD::render(
+-		tile_grid,
+-		block,
+-		imgState.ranges,
+-		binningState.point_list,
+-		width, height,
+-		background,
+-		geomState.means2D,
+-		geomState.conic_opacity,
+- 		geomState.depths, // added
+-		color_ptr,
+-		imgState.accum_alpha,
+-		imgState.accum_alpha_d,
+-		imgState.accum_prob_d,
+-		imgState.n_contrib,
+-		imgState.final_depth,
+-		dL_dpix_depth, // added
+-		dL_dpix,
+-		(float3*)dL_dmean2D,
+-		(float6*)dL_dconic,
+-		dL_dopacity,
+-		dL_ddepths, // added
+-		dL_dcolors), debug)
++	if (deterministic_backward)
++	{
++		CHECK_CUDA(BACKWARD::render_deterministic(
++			tile_grid,
++			block,
++			imgState.ranges,
++			binningState.point_list,
++			geomState.point_offsets,
++			radii,
++			P, R, width, height,
++			background,
++			geomState.means2D,
++			geomState.conic_opacity,
++			geomState.depths,
++			color_ptr,
++			imgState.accum_alpha,
++			imgState.accum_alpha_d,
++			imgState.accum_prob_d,
++			imgState.n_contrib,
++			imgState.final_depth,
++			dL_dpix_depth,
++			dL_dpix,
++			tile_gradients,
++			(float3*)dL_dmean2D,
++			(float6*)dL_dconic,
++			dL_dopacity,
++			dL_ddepths,
++			dL_dcolors), debug)
++	}
++	else
++	{
++		CHECK_CUDA(BACKWARD::render(
++			tile_grid,
++			block,
++			imgState.ranges,
++			binningState.point_list,
++			width, height,
++			background,
++			geomState.means2D,
++			geomState.conic_opacity,
++			geomState.depths,
++			color_ptr,
++			imgState.accum_alpha,
++			imgState.accum_alpha_d,
++			imgState.accum_prob_d,
++			imgState.n_contrib,
++			imgState.final_depth,
++			dL_dpix_depth,
++			dL_dpix,
++			(float3*)dL_dmean2D,
++			(float6*)dL_dconic,
++			dL_dopacity,
++			dL_ddepths,
++			dL_dcolors), debug)
++	}
+ 
+ 	// Take care of the rest of preprocessing. Was the precomputed covariance
+ 	// given to us or a scales/rot pair? If precomputed, pass that. If not,
+diff --git a/diff_gaussian_rasterization/__init__.py b/diff_gaussian_rasterization/__init__.py
+index 4a663e9..88f0886 100644
+--- a/diff_gaussian_rasterization/__init__.py
++++ b/diff_gaussian_rasterization/__init__.py
+@@ -128,19 +128,22 @@ class _RasterizeGaussians(torch.autograd.Function):
+                 num_rendered,
+                 binningBuffer,
+                 imgBuffer,
+-                raster_settings.debug)
++                raster_settings.debug,
++                raster_settings.deterministic_backward)
+ 
+         # Compute gradients for relevant tensors by invoking backward method
+         if raster_settings.debug:
+             cpu_args = cpu_deep_copy_tuple(args) # Copy them before they can be corrupted
+             try:
+-                grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations = _C.rasterize_gaussians_backward(*args)
++                backward_outputs = _C.rasterize_gaussians_backward(*args)
+             except Exception as ex:
+                 torch.save(cpu_args, "snapshot_bw.dump")
+                 print("\nAn error occured in backward. Writing snapshot_bw.dump for debugging.\n")
+                 raise ex
+         else:
+-             grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations = _C.rasterize_gaussians_backward(*args)
++             backward_outputs = _C.rasterize_gaussians_backward(*args)
++
++        grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations = backward_outputs[:8]
+ 
+         grads = (
+             grad_means3D,
+@@ -169,6 +172,7 @@ class GaussianRasterizationSettings(NamedTuple):
+     campos : torch.Tensor
+     prefiltered : bool
+     debug : bool
++    deterministic_backward: bool = False
+ 
+ class GaussianRasterizer(nn.Module):
+     def __init__(self, raster_settings):
+@@ -220,4 +224,3 @@ class GaussianRasterizer(nn.Module):
+             cov3D_precomp,
+             raster_settings, 
+         )
+-
+diff --git a/rasterize_points.cu b/rasterize_points.cu
+index 3737293..42c44d7 100644
+--- a/rasterize_points.cu
++++ b/rasterize_points.cu
+@@ -120,7 +120,7 @@ RasterizeGaussiansCUDA(
+   return std::make_tuple(rendered, out_depth, out_color, radii, is_used, geomBuffer, binningBuffer, imgBuffer);
+ }
+ 
+-std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
++std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+  RasterizeGaussiansBackwardCUDA(
+  	const torch::Tensor& background,
+ 	const torch::Tensor& means3D,
+@@ -143,7 +143,8 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
+ 	const int R,
+ 	const torch::Tensor& binningBuffer,
+ 	const torch::Tensor& imageBuffer,
+-	const bool debug) 
++	const bool debug,
++	const bool deterministic_backward)
+ {
+   const int P = means3D.size(0);
+   const int H = dL_dout_color.size(1);
+@@ -165,6 +166,9 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
+   torch::Tensor dL_dsh = torch::zeros({P, M, 3}, means3D.options());
+   torch::Tensor dL_dscales = torch::zeros({P, 3}, means3D.options());
+   torch::Tensor dL_drotations = torch::zeros({P, 4}, means3D.options());
++  torch::Tensor tile_gradients = deterministic_backward
++    ? torch::zeros({R, NUM_CHANNELS + 9}, means3D.options())
++    : torch::empty({0}, means3D.options());
+   
+   if(P != 0)
+   {  
+@@ -199,10 +203,13 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
+ 	  dL_dsh.contiguous().data<float>(),
+ 	  dL_dscales.contiguous().data<float>(),
+ 	  dL_drotations.contiguous().data<float>(),
+-	  debug);
++	  debug,
++	  deterministic_backward,
++	  deterministic_backward ? tile_gradients.contiguous().data<float>() : nullptr);
+   }
+ 
+-  return std::make_tuple(dL_dmeans2D, dL_dcolors, dL_dopacity, dL_dmeans3D, dL_dcov3D, dL_dsh, dL_dscales, dL_drotations);
++  return std::make_tuple(dL_dmeans2D, dL_dcolors, dL_dopacity, dL_dmeans3D,
++	  dL_dcov3D, dL_dsh, dL_dscales, dL_drotations, dL_dconic, dL_ddepths);
+ }
+ 
+ torch::Tensor markVisible(
+diff --git a/rasterize_points.h b/rasterize_points.h
+index a13b65a..118b4cf 100644
+--- a/rasterize_points.h
++++ b/rasterize_points.h
+@@ -37,7 +37,7 @@ RasterizeGaussiansCUDA(
+ 	const bool prefiltered,
+ 	const bool debug);
+ 
+-std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
++std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+  RasterizeGaussiansBackwardCUDA(
+  	const torch::Tensor& background,
+ 	const torch::Tensor& means3D,
+@@ -60,7 +60,8 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
+ 	const int R,
+ 	const torch::Tensor& binningBuffer,
+ 	const torch::Tensor& imageBuffer,
+-	const bool debug);
++	const bool debug,
++	const bool deterministic_backward);
+ 		
+ torch::Tensor markVisible(
+ 		torch::Tensor& means3D,
